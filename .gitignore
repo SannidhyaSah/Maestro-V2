@@ -1,0 +1,10 @@
+# dependencies
+node_modules/
+
+# build artifacts
+dist/
+build/
+
+# generated files
+.roomodes
+/.history
