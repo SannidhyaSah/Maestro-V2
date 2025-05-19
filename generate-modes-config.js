@@ -9,75 +9,111 @@ const readFile = util.promisify(fs.readFile);
 const writeFile = util.promisify(fs.writeFile);
 
 /**
- * Parses a mode markdown file to extract the mode name, role definition, and custom instructions
- * @param {string} content - The content of the markdown file
- * @returns {Object} An object containing the mode name, slug, role, and instructions
+ * Normalize a slug: lowercase, replace any sequence of non-alphanumeric characters with a single dash
+ * @param {string} name
+ * @returns {string}
  */
-function parseModeMd(content) {
-  // Extract mode name from the first heading
-  const nameMatch = content.match(/^# ([^\n]+) Mode/m);
-  if (!nameMatch) {
-    throw new Error('Could not find mode name in markdown file');
-  }
-  const name = nameMatch[1];
-
-  // Generate slug from name
-  const slug = name.toLowerCase().replace(/\s+/g, '-');
-
-  // Extract role definition
-  const roleMatch = content.match(/## Role Definition\s+([^\n]+(?:\n(?!##)[^\n]+)*)/);
-  if (!roleMatch) {
-    throw new Error('Could not find role definition in markdown file');
-  }
-  const role = roleMatch[1].trim();
-
-  // Extract custom instructions
-  const instructionsMatch = content.match(/## Custom Instructions\s+([\s\S]+?)(?=\n## |$)/);
-  if (!instructionsMatch) {
-    throw new Error('Could not find custom instructions in markdown file');
-  }
-  const instructions = instructionsMatch[1].trim();
-
-  return {
-    name,
-    slug,
-    role,
-    instructions
-  };
+function normalizeSlug(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
 /**
- * Parses a mode markdown file that may not have full role/instructions sections
- * Sets the entire content as roleDefinition and extracts customInstructions if present.
- * @param {string} content - The content of the markdown file
- * @returns {Object} An object containing the mode name, slug, roleDefinition (full content), and optional customInstructions
+ * Remove YAML frontmatter (--- ... ---) from the top of the file
+ * @param {string} content
+ * @returns {string}
  */
-function parseOtherModeMd(content) {
+function removeYamlFrontmatter(content) {
+  if (content.startsWith('---')) {
+    const end = content.indexOf('---', 3);
+    if (end !== -1) {
+      return content.slice(end + 3).trim();
+    }
+  }
+  return content;
+}
+
+/**
+ * Parses a mode markdown file to extract the mode name, roleDefinition, and optional customInstructions
+ * - Removes YAML frontmatter
+ * - Removes the first heading
+ * - Normalizes slug
+ * - Extracts clean roleDefinition and customInstructions
+ * @param {string} content - The content of the markdown file
+ * @param {string} filename - The filename of the markdown file
+ * @returns {Object} An object containing the mode name, slug, roleDefinition, and optional customInstructions
+ */
+function parseModeFile(content, filename) {
+  // Remove YAML frontmatter
+  content = removeYamlFrontmatter(content);
+
   // Extract mode name from the first heading
   const nameMatch = content.match(/^# ([^\n]+) Mode/m);
   if (!nameMatch) {
     throw new Error('Could not find mode name in markdown file');
   }
-  const name = nameMatch[1];
+  const name = nameMatch[1].trim();
+  const slug = normalizeSlug(name);
 
-  // Generate slug from name
-  const slug = name.toLowerCase().replace(/\s+/g, '-');
+  // Remove the first heading
+  const headingRegex = /^# [^\n]+ Mode\s*/m;
+  content = content.replace(headingRegex, '').trim();
 
-  // The entire content is the role definition
-  const roleDefinition = content;
+  // Special handling for Maestro-mode.md
+  if (filename.toLowerCase() === 'maestro-mode.md') {
+    // Find the ## Role Definition section
+    const roleDefMatch = content.match(/## Role Definition[\r\n]+([\s\S]*?)(?=\n## |$)/);
+    let roleDefinition = '';
+    if (roleDefMatch) {
+      roleDefinition = roleDefMatch[1].trim();
+    } else {
+      // fallback: everything before ## Custom Instructions
+      const customInstructionsIndex = content.indexOf('## Custom Instructions');
+      if (customInstructionsIndex !== -1) {
+        roleDefinition = content.substring(0, customInstructionsIndex).trim();
+      } else {
+        roleDefinition = content.trim();
+      }
+    }
+    // Custom Instructions
+    const customInstructionsMatch = content.match(/## Custom Instructions[\r\n]+([\s\S]*)/);
+    let customInstructions;
+    if (customInstructionsMatch) {
+      customInstructions = customInstructionsMatch[1].trim();
+    }
+    const result = {
+      name,
+      slug,
+      roleDefinition
+    };
+    if (customInstructions) {
+      result.customInstructions = customInstructions;
+    }
+    return result;
+  }
 
-  // Extract custom instructions (optional)
-  const instructionsMatch = content.match(/## Custom Instructions\s+([\s\S]+?)(?=\n## |$)/);
-  const customInstructions = instructionsMatch ? instructionsMatch[1].trim() : undefined;
+  // Default logic for all other modes
+  const customInstructionsMatch = content.match(/## Custom Instructions[\r\n]+([\s\S]*)/);
+  let roleDefinition, customInstructions;
+  if (customInstructionsMatch) {
+    // Everything before '## Custom Instructions' is roleDefinition
+    const splitIndex = content.indexOf('## Custom Instructions');
+    roleDefinition = content.substring(0, splitIndex).trim();
+    customInstructions = customInstructionsMatch[1].trim();
+  } else {
+    // Use the whole content as roleDefinition
+    roleDefinition = content.trim();
+  }
 
-  return {
+  const result = {
     name,
     slug,
-    roleDefinition,
-    customInstructions
+    roleDefinition
   };
+  if (customInstructions) {
+    result.customInstructions = customInstructions;
+  }
+  return result;
 }
-
 
 /**
  * Main function to generate the .roomodes configuration file
@@ -91,50 +127,15 @@ async function generateModesConfig() {
 
     const modes = [];
 
-    // Process Maestro mode separately
-    const maestroFile = 'Maestro-mode.md';
-    if (files.includes(maestroFile)) {
-      console.log(`Processing ${maestroFile}...`);
-      const content = await readFile(maestroFile, 'utf-8');
-      try {
-        const mode = parseModeMd(content); // Use the original parser for Maestro
-        modes.push({
-          slug: mode.slug,
-          name: mode.name,
-          roleDefinition: mode.role, // Maestro uses specific sections for role
-          customInstructions: mode.instructions,
-          groups: [
-            "read",
-            "edit",
-            "browser",
-            "command",
-            "mcp"
-          ],
-          source: "project"
-        });
-      } catch (error) {
-        console.error(`Error parsing ${maestroFile}: ${error.message}`);
-        // Continue without Maestro if parsing fails
-      }
-    } else {
-        console.error(`Maestro-mode.md not found.`);
-        // Continue without Maestro if file not found
-    }
-
-
-    // Process other mode files
-    const otherModeFiles = modeFiles.filter(file => file !== maestroFile);
-
-    for (const file of otherModeFiles) {
+    for (const file of modeFiles) {
       console.log(`Processing ${file}...`);
       const content = await readFile(file, 'utf-8');
       try {
-        const mode = parseOtherModeMd(content); // Use the new parser for others
-
+        const mode = parseModeFile(content, file);
         const modeObject = {
           slug: mode.slug,
           name: mode.name,
-          roleDefinition: mode.roleDefinition, // Use the entire content as roleDefinition
+          roleDefinition: mode.roleDefinition,
           groups: [
             "read",
             "edit",
@@ -144,14 +145,10 @@ async function generateModesConfig() {
           ],
           source: "project"
         };
-
-        // Add customInstructions only if it exists
-        if (mode.customInstructions !== undefined) {
-            modeObject.customInstructions = mode.customInstructions;
+        if (mode.customInstructions) {
+          modeObject.customInstructions = mode.customInstructions;
         }
-
         modes.push(modeObject);
-
       } catch (error) {
         console.error(`Error parsing ${file}: ${error.message}`);
       }
