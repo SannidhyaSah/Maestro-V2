@@ -1,0 +1,10 @@
+*.zip
+.roomodes
+.DS_Store
+docs
+# Generated mode configuration files
+.roomodes
+custom_modes.json
+# Claude Code folder
+.claude
+CLAUDE.md
