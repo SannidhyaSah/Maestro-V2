@@ -1,109 +1,96 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
-const path = require('path');
 const util = require('util');
 
-const readdir = util.promisify(fs.readdir);
-const readFile = util.promisify(fs.readFile);
 const writeFile = util.promisify(fs.writeFile);
-const mkdir = util.promisify(fs.mkdir);
-const exists = util.promisify(fs.exists);
 
 /**
- * Parses a system prompt file to extract the mode name and role definition
- * @param {string} content - The content of the system prompt file
- * @param {string} filename - The filename of the system prompt file
- * @returns {Object} An object containing the mode name, slug, and role
+ * Generates mode configuration based on predefined mode names
+ * No longer reads from files - just uses the mode names directly
  */
-function parseSystemPrompt(content, filename) {
-  // Extract mode name from the filename (system-prompt-{mode}.md)
-  const modeMatch = filename.match(/system-prompt-(.+)$/);
-  if (!modeMatch) {
-    throw new Error(`Invalid system prompt filename: ${filename}`);
-  }
-  const slug = modeMatch[1];
+function generateModesFromNames() {
+  // Define all the mode names (extracted from the files we moved)
+  const modeNames = [
+    'codenalyst',
+    'coder',
+    'maestro',
+    'planner',
+    'prodigy'
+  ];
+
+  const modes = modeNames.map(name => {
+    // Generate slug from name (convert PascalCase to lowercase)
+    const slug = name.toLowerCase().replace(/([A-Z])/g, (match, letter, index) => {
+      return index === 0 ? letter.toLowerCase() : letter.toLowerCase();
+    });
+
+    // Just use the slug for all fields
+    const role = slug;
+    const whenToUse = slug;
+    const customInstructions = slug;
+
+    return {
+      name,
+      slug,
+      role,
+      whenToUse,
+      customInstructions
+    };
+  });
+
+  return modes;
+}
+
+/**
+ * Converts mode data to YAML format
+ */
+function generateYAML(modes) {
+  let yaml = 'customModes:\n';
   
-  // Extract the first paragraph after "# SYSTEM INSTRUCTIONS" as the role definition
-  // This pattern matches the first paragraph starting with "You are" after the heading
-  const roleMatch = content.match(/# SYSTEM INSTRUCTIONS\s+\n+You are ([^,\n]+)(?:,\s+|\s+)([^\n]+(?:\n(?!##|\n\n)[^\n]+)*)/);
-  if (!roleMatch) {
-    throw new Error('Could not find role definition in system prompt file');
-  }
+  modes.forEach(mode => {
+    yaml += `  - slug: "${mode.slug}"\n`;
+    yaml += `    name: "${mode.name}"\n`;
+    yaml += `    roleDefinition: "${mode.role.replace(/"/g, '\\"')}"\n`;
+    yaml += `    whenToUse: "${mode.whenToUse.replace(/"/g, '\\"')}"\n`;
+    yaml += `    customInstructions: "${mode.customInstructions.replace(/"/g, '\\"')}"\n`;
+    yaml += `    groups:\n`;
+    yaml += `      - read\n`;
+    yaml += `      - edit\n`;
+    yaml += `      - browser\n`;
+    yaml += `      - command\n`;
+    yaml += `      - mcp\n`;
+    yaml += `    source: project\n`;
+  });
   
-  const name = roleMatch[1].trim();
-  const role = `You are ${name}, ${roleMatch[2].trim()}`;
-  
-  return {
-    name,
-    slug,
-    role
-  };
+  return yaml;
 }
 
 /**
  * Main function to generate the .roomodes configuration file
  */
 async function generateModesConfig() {
-  // Check for --global flag
-  const isGlobal = process.argv.includes('--global');
-  const outputFilename = isGlobal ? 'custom_modes.json' : '.roomodes';
-  const sourceValue = isGlobal ? 'global' : 'project';
-
   try {
-    // Check if .roo directory exists
-    const rooExists = await exists('.roo');
-    if (!rooExists) {
-      console.log('.roo directory not found, creating it...');
-      await mkdir('.roo', { recursive: true });
-    }
-
-    // Read all system prompt files from .roo directory
-    const files = await readdir('.roo');
-    const systemPromptFiles = files.filter(file => file.startsWith('system-prompt-'));
+    console.log('Generating modes configuration from predefined names...');
     
-    console.log(`Found ${systemPromptFiles.length} system prompt files`);
-    
-    // Parse each system prompt file
-    const modes = [];
-    for (const file of systemPromptFiles) {
-      console.log(`Processing ${file}...`);
-      const content = await readFile(path.join('.roo', file), 'utf-8');
-      try {
-        const mode = parseSystemPrompt(content, file);
-        
-        // Add mode to the array with only role definition (no custom instructions)
-        modes.push({
-          slug: mode.slug,
-          name: mode.name,
-          roleDefinition: mode.role,
-          groups: [
-            "read",
-            "edit",
-            "browser",
-            "command",
-            "mcp"
-          ],
-          source: sourceValue // Use determined source value
-        });
-      } catch (error) {
-        console.error(`Error parsing ${file}: ${error.message}`);
-      }
-    }
+    // Generate modes from predefined names
+    const modes = generateModesFromNames();
     
     // Sort modes alphabetically by name
     modes.sort((a, b) => a.name.localeCompare(b.name));
     
-    // Format the modes into the .roomodes configuration
-    const roomodesConfig = {
-      customModes: modes
-    };
+    // Generate YAML configuration
+    const yamlConfig = generateYAML(modes);
     
     // Write the configuration to .roomodes file
-    const configJson = JSON.stringify(roomodesConfig, null, 2);
-    await writeFile(outputFilename, configJson); // Use determined filename
+    await writeFile('.roomodes', yamlConfig);
     
-    console.log(`Successfully generated ${outputFilename} configuration with ${modes.length} modes`); // Update log message
+    console.log(`Successfully generated .roomodes configuration with ${modes.length} modes`);
+    console.log('\nGenerated modes:');
+    modes.forEach(mode => {
+      console.log(`  - ${mode.name} (${mode.slug})`);
+    });
+    
   } catch (error) {
     console.error('Error generating modes configuration:', error);
     process.exit(1);

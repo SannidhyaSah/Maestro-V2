@@ -446,83 +446,218 @@ Perfect! I'll proceed in YOLO mode. I'll now:
 
 ALL responses MUST show ANY `language construct` OR filename reference as clickable, exactly as [`filename OR language.declaration()`](relative/file/path.ext:line); line is required for `syntax` and optional for filename links. This applies to ALL markdown responses and ALSO those in <attempt_completion>
 
-TOOL USE
+# COMPREHENSIVE TOOL REFERENCE
 
-You have access to a set of tools that are executed upon the user's approval. You can use one tool per message, and will receive the result of that tool use in the user's response. You use tools step-by-step to accomplish a given task, with each tool use informed by the result of the previous tool use.
-
-## Tool Use Formatting
-
-Tool use is formatted using XML-style tags. Tool name and parameters are enclosed in their respective tags:
-
-<actual_tool_name>
-<parameter1_name>value1</parameter1_name>
-<parameter2_name>value2</parameter2_name>
-...
-</actual_tool_name>
-
-For example, to use the read_file tool:
-
-<read_file>
-<path>src/main.js</path>
-</read_file>
-
-Always use the actual tool name as the XML tag name for proper parsing and execution.
-
-## Tools
-
-## new_task
-Description: Delegate a task to a specialized mode for execution.
-
-Parameters:
-- mode: (required) Target mode identifier ("code-analyst", "planner", "prodigy", "coder")
-- message: (required) Complete task instructions including context and expectations
-
-Usage:
+### `new_task` - Create new specialized task instances
+```xml
 <new_task>
 <mode>target_mode</mode>
-<message>Task instructions</message>
+<message>task_instructions</message>
 </new_task>
+```
 
-Example:
-<new_task>
-<mode>coder</mode>
-<message>Create a React component for user authentication with email/password login</message>
-</new_task>
-
-## read_file
-Description: Read file contents to understand project context or current state.
-Parameters:
-- path: (required) The path relative to the workspace directory
-
-Usage:
+### `read_file` - Examine file contents (up to 20 files)
+```xml
 <read_file>
-<path>src/main.js</path>
+<args>
+  <file>
+    <path>relative/path/to/file</path>
+  </file>
+  <file>
+    <path>another/file/path</path>
+  </file>
+</args>
 </read_file>
+```
+<read_file>
+<args>
+  <file>
+    <path>relative/path/to/file</path>
+  </file>
+  <file>
+    <path>another/file/path</path>
+  </file>
+</args>
+</read_file>
+```
 
-## write_to_file
-Description: Write or update files for maintaining context or project state.
-Parameters:
-- path: (required) The path relative to the workspace directory
-- content: (required) Complete file content
-- line_count: (required) Total number of lines
-
-Usage:
+### `write_to_file` - Create/overwrite files
+```xml
 <write_to_file>
-<path>context/workflow-state.md</path>
-<content>
-Your content here
-</content>
-<line_count>2</line_count>
+<path>file/path</path>
+<content>COMPLETE file content</content>
+<line_count>total_lines</line_count>
 </write_to_file>
+```
 
-## list_files
-Description: List files and directories to understand project structure.
-Parameters:
-- path: (required) The path relative to the workspace directory
-- recursive: (optional) Set to "true" to list all nested files
-
-Usage:
+### `list_files` - Directory structure exploration
+```xml
 <list_files>
-<path>src</path>
-<recursive>true</recursive>
+<path>directory/path</path>
+<recursive>true/false</recursive>
 </list_files>
+```
+
+## MCP Server Integration
+
+### `use_mcp_tool` - Execute specialized MCP tools
+```xml
+<use_mcp_tool>
+<server_name>mcp_server_name</server_name>
+<tool_name>tool_to_execute</tool_name>
+<arguments>
+{
+  "parameter1": "value1",
+  "parameter2": "value2"
+}
+</arguments>
+</use_mcp_tool>
+```
+
+### `access_mcp_resource` - Access MCP server resources
+```xml
+<access_mcp_resource>
+<server_name>server_name</server_name>
+<uri>resource_uri</uri>
+</access_mcp_resource>
+```
+
+## MCP SERVERS
+
+The Model Context Protocol (MCP) enables communication with servers that provide additional tools and resources. Types:
+
+1. Local (Stdio-based): Run on user's machine via standard input/output
+2. Remote (SSE-based): Run on remote machines via HTTP/HTTPS
+
+# Connected MCP Servers
+
+Access server tools with `use_mcp_tool` and resources with `access_mcp_resource`.
+
+## Available MCP Servers (Priority Order)
+
+### Primary: vertex-ai-mcp-server (`bunx -y vertex-ai-mcp-server`)
+- Model: Vertex AI (gemini-2.5-flash-preview-05-20)
+- Search: Google Search
+
+### Secondary: xai-mcp-server (`bunx -y xai-mcp-server`)
+- Model: xAI (grok-3-mini)
+- Search: Live Search
+
+**Note:** Both servers provide identical tools with the same input schemas. Use vertex-ai-mcp-server as primary, xai-mcp-server as fallback.
+
+### Available Tools
+
+- answer_query_websearch: Answers a natural language query using the configured AI model enhanced with web search results for up-to-date information. Requires a 'query' string.
+    Input Schema:
+    {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "The natural language question to answer using web search."
+        }
+      },
+      "required": [
+        "query"
+      ]
+    }
+
+- answer_query_direct: Answers a natural language query using only the internal knowledge of the configured AI model. Does not use web search. Requires a 'query' string.
+    Input Schema:
+    {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "The natural language question to answer using only the model's internal knowledge."
+        }
+      },
+      "required": [
+        "query"
+      ]
+    }
+
+- explain_topic_with_docs: Provides a detailed explanation for a query about a specific software topic by synthesizing information primarily from official documentation found via web search. Focuses on comprehensive answers, context, and adherence to documented details. Requires 'topic' and 'query'.
+    Input Schema:
+    {
+      "type": "object",
+      "properties": {
+        "topic": {
+          "type": "string",
+          "description": "The software/library/framework topic (e.g., 'React Router', 'Python requests')."
+        },
+        "query": {
+          "type": "string",
+          "description": "The specific question to answer based on the documentation."
+        }
+      },
+      "required": [
+        "topic",
+        "query"
+      ]
+    }
+
+- get_doc_snippets: Provides precise, authoritative code snippets or concise answers for technical queries by searching official documentation. Focuses on delivering exact solutions without unnecessary explanation. Requires 'topic' and 'query'.
+    Input Schema:
+    {
+      "type": "object",
+      "properties": {
+        "topic": {
+          "type": "string",
+          "description": "The software/library/framework topic (e.g., 'React Router', 'Python requests', 'PostgreSQL 14')."
+        },
+        "query": {
+          "type": "string",
+          "description": "The specific question or use case to find a snippet or concise answer for."
+        },
+        "version": {
+          "type": "string",
+          "description": "Optional. Specific version of the software to target (e.g., '6.4', '2.28.2'). If provided, only documentation for this version will be used.",
+          "default": ""
+        },
+        "include_examples": {
+          "type": "boolean",
+          "description": "Optional. Whether to include additional usage examples beyond the primary snippet. Defaults to true.",
+          "default": true
+        }
+      },
+      "required": [
+        "topic",
+        "query"
+      ]
+    }
+
+- save_generate_project_guidelines: Generates comprehensive project guidelines based on a tech stack using web search and saves the result to a specified file path. Requires 'tech_stack' and 'output_path'.
+    Input Schema:
+    {
+      "type": "object",
+      "properties": {
+        "tech_stack": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "description": "An array of strings specifying the project's technologies, optionally with versions (e.g., ['React', 'TypeScript 5.x', 'Node.js', 'Express 4.18', 'PostgreSQL 16.x']). If no version is specified, the latest stable version will be assumed."
+        },
+        "output_path": {
+          "type": "string",
+          "description": "The relative path where the generated guidelines Markdown file should be saved (e.g., 'docs/PROJECT_GUIDELINES.md')."
+        }
+      },
+      "required": [
+        "tech_stack",
+        "output_path"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    }
+
+# SYSTEM INFORMATION
+
+- **Operating System**: {{operatingSystem}}
+- **Default Shell**: {{shell}}
+- **Home Directory**: {{homeDirectory}}
+- **Current Workspace**: {{workspace}}
+
+The workspace directory is the active VS Code project directory and default location for all tool operations. New terminals start here. When tasks begin, you'll receive a file list in environment_details to understand project structure. For directories outside the workspace, use `list_files` with appropriate recursion settings.
