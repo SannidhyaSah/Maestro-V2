@@ -47,9 +47,37 @@ Maestro V2 brings advanced workflow orchestration to Roo Code through a streamli
   - Backend (Node.js, Python, Java, etc.)
   - Database (PostgreSQL, MongoDB, etc.)
   - Testing (Jest, Playwright, etc.)
+  - Debugging (Systematic debugging strategies)
   - DevOps (Docker, Kubernetes, etc.)
 
 ## Installation
+
+### Method 1: Manual Installation (Recommended)
+
+1. Copy the required folders to your project root:
+```bash
+# From the Maestro-V2 directory, copy these to your project:
+cp -r .roo /path/to/your/project/
+cp -r personas /path/to/your/project/
+cp .roomodes /path/to/your/project/
+```
+
+That's it! The system is ready to use with Roo Code.
+
+### Method 2: Clone Entire Repository (Quick & Easy)
+
+1. Clone directly into your project root:
+```bash
+cd /path/to/your/project
+git clone https://github.com/SannidhyaSah/Maestro-V2.git .maestro-v2
+cp -r .maestro-v2/.roo .
+cp -r .maestro-v2/personas .
+cp .maestro-v2/.roomodes .
+```
+
+### Method 3: Generate Custom Configuration
+
+If you want to modify the modes or create a fresh configuration:
 
 1. Clone this repository:
 ```bash
@@ -57,7 +85,9 @@ git clone https://github.com/SannidhyaSah/Maestro-V2.git
 cd Maestro-V2
 ```
 
-2. Generate the Roo configuration:
+2. Make any changes to the `.roo/` system prompts
+
+3. Generate the new Roo configuration:
 ```bash
 # For project-specific configuration
 node generate-modes.js
@@ -66,7 +96,15 @@ node generate-modes.js
 node generate-modes.js --global
 ```
 
-3. The system is now ready to use with Roo Code.
+4. Copy the updated files to your project (see Method 1)
+
+### What Gets Installed
+
+- **`.roo/`** - System prompts for all 5 modes
+- **`personas/`** - Specialized knowledge modules
+- **`.roomodes`** - Roo Code configuration file
+
+**Note**: The `generate-modes.js` script is only needed if you modify the system. For normal use, just copy the folders!
 
 ## Usage
 
@@ -124,6 +162,7 @@ Code Analyst: [Loads code-reviewer persona]
 │       ├── /backend/        # Backend languages & frameworks
 │       ├── /database/       # Database technologies
 │       ├── /testing/        # Testing frameworks
+│       ├── /debugging/      # Debugging strategies & tools
 │       └── /devops/         # CI/CD & DevOps tools
 ├── /maestrodocs/             # Runtime workflow management
 ├── generate-modes.js         # Configuration generator

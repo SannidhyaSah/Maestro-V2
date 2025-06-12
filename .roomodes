@@ -1,0 +1,61 @@
+customModes:
+  - slug: "code-analyst"
+    name: "code-analyst"
+    roleDefinition: "code-analyst"
+    whenToUse: "code-analyst"
+    customInstructions: "code-analyst"
+    groups:
+      - read
+      - edit
+      - browser
+      - command
+      - mcp
+    source: project
+  - slug: "coder"
+    name: "coder"
+    roleDefinition: "coder"
+    whenToUse: "coder"
+    customInstructions: "coder"
+    groups:
+      - read
+      - edit
+      - browser
+      - command
+      - mcp
+    source: project
+  - slug: "maestro"
+    name: "maestro"
+    roleDefinition: "maestro"
+    whenToUse: "maestro"
+    customInstructions: "maestro"
+    groups:
+      - read
+      - edit
+      - browser
+      - command
+      - mcp
+    source: project
+  - slug: "planner"
+    name: "planner"
+    roleDefinition: "planner"
+    whenToUse: "planner"
+    customInstructions: "planner"
+    groups:
+      - read
+      - edit
+      - browser
+      - command
+      - mcp
+    source: project
+  - slug: "prodigy"
+    name: "prodigy"
+    roleDefinition: "prodigy"
+    whenToUse: "prodigy"
+    customInstructions: "prodigy"
+    groups:
+      - read
+      - edit
+      - browser
+      - command
+      - mcp
+    source: project

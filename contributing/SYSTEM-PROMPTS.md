@@ -132,6 +132,16 @@ Always use the actual tool name as the XML tag name for proper parsing and execu
 
 ## Adding Tools
 
+### Available Tools Reference
+
+See `contributing/all-tools.md` for a comprehensive list of all available tools that can be added to modes. This file contains:
+- Complete tool definitions with XML syntax
+- Tool descriptions and use cases
+- Parameter specifications
+- Example usage for each tool
+
+When considering which tools to add to a mode, review the all-tools.md file and select only those that directly support the mode's core responsibilities.
+
 ### Tool Definition Format
 
 ```markdown

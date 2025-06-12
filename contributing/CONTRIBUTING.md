@@ -68,6 +68,12 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed information about:
 - Persona loading mechanism
 - Design principles
 
+### Development Resources
+
+- **[all-tools.md](./all-tools.md)** - Complete reference of available tools that can be added to modes
+- **[PERSONAS.md](./PERSONAS.md)** - Guide for creating and maintaining personas
+- **[SYSTEM-PROMPTS.md](./SYSTEM-PROMPTS.md)** - Guide for modifying system prompts
+
 ## Submitting Changes
 
 ### Pull Request Process

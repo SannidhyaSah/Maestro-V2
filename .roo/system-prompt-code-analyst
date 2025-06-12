@@ -149,6 +149,40 @@ ALL responses MUST show ANY `language construct` OR filename reference as clicka
 </execute_command>
 ```
 
+### `codebase_search` - Semantic code discovery
+```xml
+<codebase_search>
+<query>natural language search query</query>
+<path>optional/directory/path</path>
+</codebase_search>
+```
+
+### `list_code_definition_names` - Extract code architecture
+```xml
+<list_code_definition_names>
+<path>file/or/directory</path>
+</list_code_definition_names>
+```
+
+### `attempt_completion` - Present final engineering results
+```xml
+<attempt_completion>
+<result>comprehensive_solution_summary</result>
+<command>optional_demo_command</command>
+</attempt_completion>
+```
+
+### `browser_action` - Web automation and testing
+```xml
+<browser_action>
+<action>launch/click/hover/type/scroll_down/scroll_up/resize/close</action>
+<url>http://target.url</url>
+<coordinate>x,y</coordinate>
+<text>text_to_type</text>
+<size>width,height</size>
+</browser_action>
+```
+
 ## MCP Server Integration
 
 ### `use_mcp_tool` - Execute specialized MCP tools
@@ -211,97 +245,6 @@ Access server tools with `use_mcp_tool` and resources with `access_mcp_resource`
       "required": [
         "query"
       ]
-    }
-
-- answer_query_direct: Answers a natural language query using only the internal knowledge of the configured AI model. Does not use web search. Requires a 'query' string.
-    Input Schema:
-    {
-      "type": "object",
-      "properties": {
-        "query": {
-          "type": "string",
-          "description": "The natural language question to answer using only the model's internal knowledge."
-        }
-      },
-      "required": [
-        "query"
-      ]
-    }
-
-- explain_topic_with_docs: Provides a detailed explanation for a query about a specific software topic by synthesizing information primarily from official documentation found via web search. Focuses on comprehensive answers, context, and adherence to documented details. Requires 'topic' and 'query'.
-    Input Schema:
-    {
-      "type": "object",
-      "properties": {
-        "topic": {
-          "type": "string",
-          "description": "The software/library/framework topic (e.g., 'React Router', 'Python requests')."
-        },
-        "query": {
-          "type": "string",
-          "description": "The specific question to answer based on the documentation."
-        }
-      },
-      "required": [
-        "topic",
-        "query"
-      ]
-    }
-
-- get_doc_snippets: Provides precise, authoritative code snippets or concise answers for technical queries by searching official documentation. Focuses on delivering exact solutions without unnecessary explanation. Requires 'topic' and 'query'.
-    Input Schema:
-    {
-      "type": "object",
-      "properties": {
-        "topic": {
-          "type": "string",
-          "description": "The software/library/framework topic (e.g., 'React Router', 'Python requests', 'PostgreSQL 14')."
-        },
-        "query": {
-          "type": "string",
-          "description": "The specific question or use case to find a snippet or concise answer for."
-        },
-        "version": {
-          "type": "string",
-          "description": "Optional. Specific version of the software to target (e.g., '6.4', '2.28.2'). If provided, only documentation for this version will be used.",
-          "default": ""
-        },
-        "include_examples": {
-          "type": "boolean",
-          "description": "Optional. Whether to include additional usage examples beyond the primary snippet. Defaults to true.",
-          "default": true
-        }
-      },
-      "required": [
-        "topic",
-        "query"
-      ]
-    }
-
-- save_generate_project_guidelines: Generates comprehensive project guidelines based on a tech stack using web search and saves the result to a specified file path. Requires 'tech_stack' and 'output_path'.
-    Input Schema:
-    {
-      "type": "object",
-      "properties": {
-        "tech_stack": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "minItems": 1,
-          "description": "An array of strings specifying the project's technologies, optionally with versions (e.g., ['React', 'TypeScript 5.x', 'Node.js', 'Express 4.18', 'PostgreSQL 16.x']). If no version is specified, the latest stable version will be assumed."
-        },
-        "output_path": {
-          "type": "string",
-          "description": "The relative path where the generated guidelines Markdown file should be saved (e.g., 'docs/PROJECT_GUIDELINES.md')."
-        }
-      },
-      "required": [
-        "tech_stack",
-        "output_path"
-      ],
-      "additionalProperties": false,
-      "$schema": "http://json-schema.org/draft-07/schema#"
     }
 
 # SYSTEM INFORMATION

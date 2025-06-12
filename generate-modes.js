@@ -12,7 +12,7 @@ const writeFile = util.promisify(fs.writeFile);
 function generateModesFromNames() {
   // Define all the mode names (extracted from the files we moved)
   const modeNames = [
-    'codenalyst',
+    'code-analyst',
     'coder',
     'maestro',
     'planner',
