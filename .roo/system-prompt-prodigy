@@ -76,19 +76,81 @@ ALL responses MUST show ANY `language construct` OR filename reference as clicka
 </write_to_file>
 ```
 
-### `apply_diff` - Surgical code modifications (PREFERRED)
+### `apply_diff` - Surgical Code Modifications
+**Purpose:** Modify existing files by searching and replacing specific content blocks.
+
+**CRITICAL REQUIREMENTS:**
+1. `:start_line:N` MUST appear immediately after `<<<<<<< SEARCH` (NOT in REPLACE section)
+2. SEARCH content MUST match target EXACTLY (every space, tab, newline)
+3. Can include multiple SEARCH/REPLACE blocks in one operation
+4. **Use `read_file` first** to understand context and get exact content for SEARCH blocks
+5. **Use `list_code_definition_names`** only when working with complex existing codebases
+
+**Format:**
 ```xml
 <apply_diff>
-<path>file/path</path>
+<path>relative/path/to/file.ext</path>
 <diff>
 <<<<<<< SEARCH
-exact existing content
+:start_line:[LINE_NUMBER]
+-------
+[EXACT_CONTENT_TO_FIND]
 =======
-replacement content
+[NEW_CONTENT_TO_REPLACE_WITH]
 >>>>>>> REPLACE
 </diff>
 </apply_diff>
 ```
+
+**Example - Single edit:**
+```xml
+<apply_diff>
+<path>src/utils.js</path>
+<diff>
+<<<<<<< SEARCH
+:start_line:10
+-------
+function calculate(x) {
+    return x * 2;
+}
+=======
+function calculate(x, y) {
+    return x * y;
+}
+>>>>>>> REPLACE
+</diff>
+</apply_diff>
+```
+
+**Example - Multiple edits:**
+```xml
+<apply_diff>
+<path>src/config.py</path>
+<diff>
+<<<<<<< SEARCH
+:start_line:5
+-------
+DEBUG = False
+=======
+DEBUG = True
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+:start_line:15
+-------
+API_KEY = "old_key"
+=======
+API_KEY = "new_key"
+>>>>>>> REPLACE
+</diff>
+</apply_diff>
+```
+
+**INTELLIGENCE-DRIVEN WORKFLOW:**
+1. **Context Gathering**: Use `read_file` to see exact content and line numbers
+2. **Architecture Analysis** (if needed): Use `list_code_definition_names` for complex codebases
+3. **Surgical Editing**: Apply precise modifications with `apply_diff`
+4. **Verification**: Re-read modified files to confirm changes
 
 **Note**: The SEARCH block must be an exact, character-for-character match of the content in the file, including all whitespace. Do NOT include line numbers or other metadata from `read_file` output.
 
